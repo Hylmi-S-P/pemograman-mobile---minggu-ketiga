@@ -12,132 +12,73 @@ void main() {
     return const PricingCardApp();
   }
 
-  testWidgets('Both packages render with the expected copy', (tester) async {
+  testWidgets('Screen 1 displays 3 catalog cards and AppBar', (tester) async {
     await tester.pumpWidget(pumpAtSize(tester, const Size(600, 1200)));
 
+    expect(find.text('Katalog Paket Layanan'), findsOneWidget);
     expect(find.text('Paket Starter'), findsOneWidget);
     expect(find.text('Paket Profesional'), findsOneWidget);
+    expect(find.text('Paket Enterprise'), findsOneWidget);
+
     expect(find.text('Rp 1.500.000'), findsOneWidget);
     expect(find.text('Rp 5.000.000'), findsOneWidget);
-    expect(find.text('/ proyek'), findsNWidgets(2));
-    expect(find.text('Rekomendasi'), findsOneWidget);
-    expect(find.text('Pilih Paket'), findsNWidgets(2));
-    expect(find.byIcon(Icons.smartphone), findsOneWidget);
-    expect(find.byIcon(Icons.laptop_mac), findsOneWidget);
+    expect(find.text('Rp 12.000.000'), findsOneWidget);
+
+    expect(find.text('★ Rekomendasi Pilihan'), findsOneWidget);
   });
 
-  testWidgets('Single column layout on a portrait viewport', (tester) async {
-    await tester.pumpWidget(pumpAtSize(tester, const Size(360, 800)));
-
-    expect(find.byType(PricingCard), findsNWidgets(2));
-    expect(tester.takeException(), isNull);
-
-    final professionalRect = tester.getRect(find.text('Paket Profesional'));
-    final starterRect = tester.getRect(find.text('Paket Starter'));
-    expect(starterRect.top, greaterThan(professionalRect.bottom));
-
-    final professionalCard = tester.getRect(
-      find.byKey(const ValueKey('card-professional')),
-    );
-    expect(professionalCard.left, closeTo(30, 0.1));
-  });
-
-  testWidgets('Two column layout on a landscape viewport', (tester) async {
-    await tester.pumpWidget(pumpAtSize(tester, const Size(960, 600)));
-
-    expect(find.byType(PricingCard), findsNWidgets(2));
-    expect(tester.takeException(), isNull);
-
-    final professionalRect = tester.getRect(find.text('Paket Profesional'));
-    final starterRect = tester.getRect(find.text('Paket Starter'));
-    expect(professionalRect.left, lessThan(starterRect.left));
-    expect(professionalRect.right, lessThan(starterRect.left));
-
-    final professionalCard = tester.getRect(
-      find.byKey(const ValueKey('card-professional')),
-    );
-    expect(professionalCard.left, closeTo(170, 0.1));
-  });
-
-  testWidgets(
-    'Tapping Pilih Paket on the professional card surfaces feedback',
-    (tester) async {
-      await tester.pumpWidget(pumpAtSize(tester, const Size(600, 1200)));
-
-      final professionalCard = find.ancestor(
-        of: find.text('Paket Profesional'),
-        matching: find.byType(PricingCard),
-      );
-      await tester.ensureVisible(
-        find.descendant(
-          of: professionalCard,
-          matching: find.text('Pilih Paket'),
-        ),
-      );
-      await tester.tap(
-        find.descendant(
-          of: professionalCard,
-          matching: find.text('Pilih Paket'),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Paket Profesional dipilih'), findsOneWidget);
-    },
-  );
-
-  testWidgets('Portrait stays single column near the breakpoint', (
-    tester,
-  ) async {
-    await tester.pumpWidget(pumpAtSize(tester, const Size(721, 800)));
-
-    expect(find.byType(PricingCard), findsNWidgets(2));
-    expect(tester.takeException(), isNull);
-
-    final professionalRect = tester.getRect(find.text('Paket Profesional'));
-    final starterRect = tester.getRect(find.text('Paket Starter'));
-    expect(starterRect.top, greaterThan(professionalRect.bottom));
-  });
-
-  testWidgets('Narrow landscape falls back to one column', (tester) async {
-    await tester.pumpWidget(pumpAtSize(tester, const Size(600, 360)));
-
-    expect(find.byType(PricingCard), findsNWidgets(2));
-    expect(tester.takeException(), isNull);
-
-    final professionalRect = tester.getRect(find.text('Paket Profesional'));
-    final starterRect = tester.getRect(find.text('Paket Starter'));
-    expect(starterRect.top, greaterThan(professionalRect.bottom));
-  });
-
-  testWidgets('Scroll uses clamping physics without stretch', (tester) async {
-    await tester.pumpWidget(pumpAtSize(tester, const Size(360, 800)));
-
-    final scrollView = tester.widget<SingleChildScrollView>(
-      find.byType(SingleChildScrollView),
-    );
-    expect(scrollView.physics, isA<ClampingScrollPhysics>());
-
-    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, 180));
-    await tester.pump();
-
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('Badge is only shown for the recommended package', (
+  testWidgets('Navigating to Screen 2 and popping back via back button', (
     tester,
   ) async {
     await tester.pumpWidget(pumpAtSize(tester, const Size(600, 1200)));
 
-    expect(find.text('Rekomendasi'), findsOneWidget);
+    // Tap on the first card (Paket Starter)
+    await tester.tap(find.text('Paket Starter'));
+    await tester.pumpAndSettle();
+
+    // Verify Screen 2 (DetailCatalogScreen) is presented
+    expect(find.byType(DetailCatalogScreen), findsOneWidget);
+    expect(find.text('Ringkasan & Deskripsi Paket'), findsOneWidget);
+    expect(find.text('Pilih & Konfirmasi Paket Ini'), findsOneWidget);
+
+    // Tap the back button in AppBar
+    await tester.tap(find.byTooltip('Kembali ke Katalog'));
+    await tester.pumpAndSettle();
+
+    // Verify we are back on Screen 1
+    expect(find.byType(CatalogHomeScreen), findsOneWidget);
+    expect(find.byType(DetailCatalogScreen), findsNothing);
+  });
+
+  testWidgets('Screen 2 stateful interactions (Bookmark, Counter, & Select)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(pumpAtSize(tester, const Size(600, 1200)));
+
+    // Open detail of Paket Profesional
+    await tester.tap(find.text('Paket Profesional'));
+    await tester.pumpAndSettle();
+
+    // Test Bookmark toggle
+    expect(find.byIcon(Icons.bookmark_border), findsAtLeastNWidgets(1));
+    await tester.tap(find.byTooltip('Simpan ke Favorit'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.bookmark), findsAtLeastNWidgets(1));
+
+    // Test Quantity Counter
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Rp 5.000.000'), findsNWidgets(2)); // price & initial total
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('Rp 10.000.000'), findsOneWidget);
+
+    // Test Confirmation button state
+    await tester.tap(find.text('Pilih & Konfirmasi Paket Ini'));
+    await tester.pumpAndSettle();
     expect(
-      find.descendant(
-        of: find.ancestor(
-          of: find.text('Paket Profesional'),
-          matching: find.byType(PricingCard),
-        ),
-        matching: find.text('Rekomendasi'),
-      ),
+      find.text('✓ Paket Telah Dipilih (Klik untuk Batalkan)'),
       findsOneWidget,
     );
   });
